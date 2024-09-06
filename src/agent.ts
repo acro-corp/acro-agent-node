@@ -255,7 +255,6 @@ class AcroAgent {
       const plugin = getPlugin(name);
 
       if (plugin) {
-        this.setFramework(name, version);
         return plugin<typeof exports>(this, exports, version);
       }
     } catch (err: any) {

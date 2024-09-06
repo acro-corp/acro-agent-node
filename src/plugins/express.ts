@@ -32,11 +32,8 @@ function bootstrap<T>(
   express: any,
   version: string | undefined
 ): T {
-  // express 5 moves the router methods onto a prototype
-  const router =
-    version && satisfies(version as string, "^5")
-      ? express?.Router && express?.Router.prototype
-      : express?.Router;
+  // set framework
+  agent.setFramework("express", version || null);
 
   // { userIdPath: 'auth.userId' }
   const frameworkOptions = agent.getFrameworkOptions("express");
@@ -44,6 +41,12 @@ function bootstrap<T>(
   agent.logger?.debug(
     `express.frameworkOptions: ${JSON.stringify(frameworkOptions)}`
   );
+
+  // express 5 moves the router methods onto a prototype
+  const router =
+    version && satisfies(version as string, "^5")
+      ? express?.Router && express?.Router.prototype
+      : express?.Router;
 
   wrap<typeof router>(router, "route", (original: Function) => {
     return function route(path: any) {
