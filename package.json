@@ -1,0 +1,31 @@
+{
+  "name": "acro-agent-node",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json && npm run rename:esm",
+    "rename:esm": "/bin/zsh ./scripts/fix-mjs.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "@types/semver": "^7.5.8",
+    "esbuild": "^0.23.1",
+    "esbuild-plugin-tsc": "^0.4.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "import-in-the-middle": "^1.11.0",
+    "require-in-the-middle": "^7.4.0",
+    "semver": "^7.6.3"
+  }
+}
