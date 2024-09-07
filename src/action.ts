@@ -5,6 +5,7 @@
  */
 
 export interface Action {
+  id?: string;
   timestamp: string;
   clientId?: string;
   companyId?: string;

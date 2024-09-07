@@ -163,7 +163,7 @@ class AcroAgent {
       typeof this._logger === "function"
     ) {
       this._logger.apply(this, [
-        `[${LogLevel[level]}] [acro-agent-node] ${message || ""}`,
+        `[${LogLevel[level]}] [@acro-sdk/agent] ${message || ""}`,
         ...args,
       ]);
     }
