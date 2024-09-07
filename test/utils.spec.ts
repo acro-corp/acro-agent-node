@@ -28,6 +28,10 @@ describe("removeSensitiveKeys()", () => {
     expect(removeSensitiveKeys(NaN, ["b", "c"])).toStrictEqual(NaN);
   });
 
+  test("works with an array of primitives", () => {
+    expect(removeSensitiveKeys([1, 2], ["b", "c"])).toStrictEqual([1, 2]);
+  });
+
   test("works with a single layer object", () => {
     expect(
       removeSensitiveKeys(
@@ -59,6 +63,25 @@ describe("removeSensitiveKeys()", () => {
         ["b", "c"]
       )
     ).toStrictEqual({ a: 1, d: { e: "four" } });
+  });
+
+  test("works with an array of objects", () => {
+    expect(
+      removeSensitiveKeys(
+        [
+          {
+            a: 1,
+            b: "two",
+            c: null,
+            d: {
+              b: 3,
+              e: "four",
+            },
+          },
+        ],
+        ["b", "c"]
+      )
+    ).toStrictEqual([{ a: 1, d: { e: "four" } }]);
   });
 
   test("works with a single layer object with arrays", () => {
@@ -151,6 +174,29 @@ describe("removeSensitiveKeys()", () => {
     });
   });
 
+  test("works with an array of objects with nested circular reference", () => {
+    const obj: any = {
+      a: 1,
+      b: "two",
+      c: null,
+    };
+
+    obj.d = {
+      c: 3,
+      e: obj,
+      f: "four",
+    };
+
+    expect(removeSensitiveKeys([obj], ["b", "c"])).toStrictEqual([
+      {
+        a: 1,
+        d: {
+          f: "four",
+        },
+      },
+    ]);
+  });
+
   test("works with an object with circular reference in array", () => {
     const obj: any = {
       a: 1,
@@ -194,25 +240,27 @@ describe("removeSensitiveKeys()", () => {
 
 describe("breakCircularReferences()", () => {
   test("works with number primitive", () => {
-    expect(breakCircularReferences(5, ["b", "c"])).toStrictEqual(5);
+    expect(breakCircularReferences(5)).toStrictEqual(5);
   });
 
   test("works with string primitive", () => {
-    expect(breakCircularReferences("foo", ["b", "c"])).toStrictEqual("foo");
+    expect(breakCircularReferences("foo")).toStrictEqual("foo");
   });
 
   test("works with null", () => {
-    expect(breakCircularReferences(null, ["b", "c"])).toStrictEqual(null);
+    expect(breakCircularReferences(null)).toStrictEqual(null);
   });
 
   test("works with undefined", () => {
-    expect(breakCircularReferences(undefined, ["b", "c"])).toStrictEqual(
-      undefined
-    );
+    expect(breakCircularReferences(undefined)).toStrictEqual(undefined);
   });
 
   test("works with NaN", () => {
-    expect(breakCircularReferences(NaN, ["b", "c"])).toStrictEqual(NaN);
+    expect(breakCircularReferences(NaN)).toStrictEqual(NaN);
+  });
+
+  test("works with an array of primitives", () => {
+    expect(breakCircularReferences([1, 2])).toStrictEqual([1, 2]);
   });
 
   test("works with a single layer object", () => {
@@ -231,6 +279,28 @@ describe("breakCircularReferences()", () => {
       d: NaN,
       e: undefined,
     });
+  });
+
+  test("works with an array of objects", () => {
+    expect(
+      breakCircularReferences([
+        {
+          a: 1,
+          b: "two",
+          c: null,
+          d: NaN,
+          e: undefined,
+        },
+      ])
+    ).toStrictEqual([
+      {
+        a: 1,
+        b: "two",
+        c: null,
+        d: NaN,
+        e: undefined,
+      },
+    ]);
   });
 
   test("works with a two layer object", () => {
@@ -347,6 +417,32 @@ describe("breakCircularReferences()", () => {
         f: "four",
       },
     });
+  });
+
+  test("works with an array of objects with nested circular reference", () => {
+    const obj: any = {
+      a: 1,
+      b: "two",
+      c: null,
+    };
+
+    obj.d = {
+      c: 3,
+      e: obj,
+      f: "four",
+    };
+
+    expect(breakCircularReferences([obj])).toStrictEqual([
+      {
+        a: 1,
+        b: "two",
+        c: null,
+        d: {
+          c: 3,
+          f: "four",
+        },
+      },
+    ]);
   });
 
   test("works with an object with circular reference in array", () => {

@@ -31,6 +31,13 @@ export function removeSensitiveKeys(
     return object;
   }
 
+  // if the whole object is an array
+  if (Array.isArray(object)) {
+    return object.map((elem) =>
+      removeSensitiveKeys(elem, keys, [...(parents || []), object])
+    );
+  }
+
   return Object.keys(object).reduce((sanitized, key) => {
     // remove the key
     if (keys?.includes(key)) {
