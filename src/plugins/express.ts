@@ -26,6 +26,8 @@ import { get } from "../utils";
 
 const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
+const ExpressRequestStartSymbol = Symbol("AcroExpressRequestStart");
+const ExpressRequestHrTimeSymbol = Symbol("AcroExpressRequestHrTime");
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -157,13 +159,33 @@ function bootstrap<T>(
 
         if (original.length !== 4) {
           handle = function (req: any, res: any, next: any) {
+            // set start time
+            if (!req[ExpressRequestHrTimeSymbol]) {
+              req[ExpressRequestHrTimeSymbol] = process.hrtime();
+            }
+            if (!req[ExpressRequestStartSymbol]) {
+              req[ExpressRequestStartSymbol] = new Date().toISOString();
+            }
+
             wrap(res, "end", (original: any) => {
               return function end() {
                 agent.logger?.debug(
                   `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
                 );
 
+                let time;
+
+                if (req[ExpressRequestHrTimeSymbol]) {
+                  const diff = process.hrtime(req[ExpressRequestHrTimeSymbol]);
+                  time =
+                    Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
+                }
+
+                const timestamp =
+                  req[ExpressRequestStartSymbol] || new Date().toISOString();
+
                 const action = agent.createAction({
+                  timestamp,
                   action: {
                     type: "HTTP",
                     verb: req.method,
@@ -191,6 +213,7 @@ function bootstrap<T>(
                   },
                   response: {
                     status: res.statusCode,
+                    time,
                   },
                 });
 
@@ -223,9 +246,15 @@ function bootstrap<T>(
           };
         } else {
           handle = function (err: Error, req: any, res: any, next: any) {
+            // set start time
+            if (!req[ExpressRequestStartSymbol]) {
+              req[ExpressRequestStartSymbol] = process.hrtime();
+            }
+
             agent.logger?.debug(
               `express.Router.Layer.handle.${layer.name} wrapped error: ${req.method} ${req.originalUrl} ${err.name} ${err.message}`
             );
+
             return original.apply(this, arguments);
           };
         }

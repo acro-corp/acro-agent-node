@@ -214,6 +214,8 @@ class AcroAgent {
       request: {
         ...request,
       },
+      timestamp: action.timestamp || new Date().toISOString(),
+      clientId: this._applicationId,
       app: this._app,
       environment: this._environment,
       framework: {

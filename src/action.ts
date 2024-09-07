@@ -5,13 +5,15 @@
  */
 
 export interface Action {
+  timestamp: string;
+  clientId?: string;
+  companyId?: string;
   app?: string;
   environment?: string;
   framework?: {
     name?: string;
     version?: string;
   };
-  clientId?: string;
   sessionId?: string;
   traceIds?: Array<string>;
   action: {
