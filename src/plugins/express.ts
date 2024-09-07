@@ -22,12 +22,14 @@ import { hostname } from "os";
 
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
-import { get } from "../utils";
+import { get, removeSensitiveKeys } from "../utils";
 
 const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
 const ExpressRequestStartSymbol = Symbol("AcroExpressRequestStart");
 const ExpressRequestHrTimeSymbol = Symbol("AcroExpressRequestHrTime");
+export const ExpressTrackSymbol = Symbol("AcroExpressTrack");
+export const ExpressSensitiveKeysSymbol = Symbol("AcroExpressSensitiveKeys");
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -207,9 +209,18 @@ function bootstrap<T>(
                     },
                   ],
                   request: {
-                    params: req?.params,
-                    query: req?.query,
-                    body: req?.body,
+                    params: removeSensitiveKeys(
+                      req?.params,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
+                    query: removeSensitiveKeys(
+                      req?.query,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
+                    body: removeSensitiveKeys(
+                      req?.body,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
                   },
                   response: {
                     status: res.statusCode,
@@ -223,7 +234,10 @@ function bootstrap<T>(
                   )} – shouldTrack=${agent.shouldTrackAction(action)}`
                 );
 
-                if (agent.shouldTrackAction(action)) {
+                if (
+                  agent.shouldTrackAction(action) ||
+                  req[ExpressTrackSymbol] === true // force track
+                ) {
                   agent.trackAction(action);
                 }
 

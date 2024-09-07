@@ -11,7 +11,7 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json && npm run rename:esm",
     "rename:esm": "/bin/zsh ./scripts/fix-mjs.sh",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +21,8 @@
     "@types/semver": "^7.5.8",
     "esbuild": "^0.23.1",
     "esbuild-plugin-tsc": "^0.4.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
   },
   "dependencies": {
     "import-in-the-middle": "^1.11.0",
