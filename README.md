@@ -48,7 +48,7 @@ Forces a route to be tracked (e.g. if the route is a GET) and deeply removes sen
 
 ```typescript
 import express from "express";
-import { AcroAgent, LogLevel } from "@acro-sdk/agent";
+import { acroTrack } from "@acro-sdk/agent";
 
 const router = express.Router();
 

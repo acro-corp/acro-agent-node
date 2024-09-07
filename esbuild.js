@@ -9,7 +9,7 @@ import esbuildPluginTsc from "esbuild-plugin-tsc";
 
 const build = () => {
   esbuild.build({
-    entryPoints: ["src/agent.ts"],
+    entryPoints: ["src/index.ts"],
     outfile: "dist/index.js",
     platform: "node",
     format: "esm",

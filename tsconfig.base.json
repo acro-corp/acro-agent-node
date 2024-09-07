@@ -10,6 +10,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "noImplicitThis": false
-  }
+    "noImplicitThis": false,
+  },
+  "exclude": [
+    "test/**/*.spec.ts",
+    "dist/**/*"
+  ]
 }
