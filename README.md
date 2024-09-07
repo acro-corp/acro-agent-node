@@ -39,3 +39,22 @@ new AcroAgent({
 const app = express();
 ...
 ```
+
+Although the agent handles almost everything automatically, you can handhold it for important actions by using middleware. The following middleware are available in `./src/helpers/express/`:
+
+#### `acroTrack(sensitiveKeys?: string[])`
+
+Forces a route to be tracked (e.g. if the route is a GET) and deeply removes sensitive keys from any request or response variables in the action.
+
+```typescript
+import express from "express";
+import { AcroAgent, LogLevel } from "@acro-sdk/agent";
+
+const router = express.Router();
+
+router.post('/transactions', acroTrack(['number', 'cvv', 'expMonth', 'expYear']), (req, res) => {
+  // do something
+});
+
+...
+```
