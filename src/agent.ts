@@ -214,6 +214,8 @@ class AcroAgent {
       request: {
         ...request,
       },
+      timestamp: action.timestamp || new Date().toISOString(),
+      clientId: this._applicationId,
       app: this._app,
       environment: this._environment,
       framework: {
@@ -255,7 +257,6 @@ class AcroAgent {
       const plugin = getPlugin(name);
 
       if (plugin) {
-        this.setFramework(name, version);
         return plugin<typeof exports>(this, exports, version);
       }
     } catch (err: any) {
