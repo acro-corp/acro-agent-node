@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, test } from "vitest";
-import { breakCircularDependencies, removeSensitiveKeys } from "../src/utils";
+import { breakCircularReferences, removeSensitiveKeys } from "../src/utils";
 
 describe("removeSensitiveKeys()", () => {
   test("works with number primitive", () => {
@@ -192,32 +192,32 @@ describe("removeSensitiveKeys()", () => {
   });
 });
 
-describe("breakCircularDependencies()", () => {
+describe("breakCircularReferences()", () => {
   test("works with number primitive", () => {
-    expect(breakCircularDependencies(5, ["b", "c"])).toStrictEqual(5);
+    expect(breakCircularReferences(5, ["b", "c"])).toStrictEqual(5);
   });
 
   test("works with string primitive", () => {
-    expect(breakCircularDependencies("foo", ["b", "c"])).toStrictEqual("foo");
+    expect(breakCircularReferences("foo", ["b", "c"])).toStrictEqual("foo");
   });
 
   test("works with null", () => {
-    expect(breakCircularDependencies(null, ["b", "c"])).toStrictEqual(null);
+    expect(breakCircularReferences(null, ["b", "c"])).toStrictEqual(null);
   });
 
   test("works with undefined", () => {
-    expect(breakCircularDependencies(undefined, ["b", "c"])).toStrictEqual(
+    expect(breakCircularReferences(undefined, ["b", "c"])).toStrictEqual(
       undefined
     );
   });
 
   test("works with NaN", () => {
-    expect(breakCircularDependencies(NaN, ["b", "c"])).toStrictEqual(NaN);
+    expect(breakCircularReferences(NaN, ["b", "c"])).toStrictEqual(NaN);
   });
 
   test("works with a single layer object", () => {
     expect(
-      breakCircularDependencies({
+      breakCircularReferences({
         a: 1,
         b: "two",
         c: null,
@@ -235,7 +235,7 @@ describe("breakCircularDependencies()", () => {
 
   test("works with a two layer object", () => {
     expect(
-      breakCircularDependencies({
+      breakCircularReferences({
         a: 1,
         b: "two",
         c: {
@@ -255,7 +255,7 @@ describe("breakCircularDependencies()", () => {
 
   test("works with a single layer object with arrays", () => {
     expect(
-      breakCircularDependencies({
+      breakCircularReferences({
         a: 1,
         b: [
           {
@@ -281,7 +281,7 @@ describe("breakCircularDependencies()", () => {
 
   test("works with a two layer object with arrays", () => {
     expect(
-      breakCircularDependencies({
+      breakCircularReferences({
         a: 1,
         b: [
           {
@@ -318,7 +318,7 @@ describe("breakCircularDependencies()", () => {
 
     obj.d = obj;
 
-    expect(breakCircularDependencies(obj)).toStrictEqual({
+    expect(breakCircularReferences(obj)).toStrictEqual({
       a: 1,
       b: "two",
       c: null,
@@ -338,7 +338,7 @@ describe("breakCircularDependencies()", () => {
       f: "four",
     };
 
-    expect(breakCircularDependencies(obj)).toStrictEqual({
+    expect(breakCircularReferences(obj)).toStrictEqual({
       a: 1,
       b: "two",
       c: null,
@@ -358,7 +358,7 @@ describe("breakCircularDependencies()", () => {
 
     obj.d = [obj];
 
-    expect(breakCircularDependencies(obj)).toStrictEqual({
+    expect(breakCircularReferences(obj)).toStrictEqual({
       a: 1,
       b: "two",
       c: null,
@@ -381,7 +381,7 @@ describe("breakCircularDependencies()", () => {
       },
     ];
 
-    expect(breakCircularDependencies(obj)).toStrictEqual({
+    expect(breakCircularReferences(obj)).toStrictEqual({
       a: 1,
       b: "two",
       c: null,

@@ -16,7 +16,7 @@ export function get(object: any, path: string) {
 
 /**
  * Deeply removes a list of sensitive keys from anywhere in an object.
- * Also breaks any circular dependencies.
+ * Also breaks any circular references.
  * @param {object} object
  * @param {string[]} keys
  * @param {any[]} parents
@@ -78,11 +78,11 @@ export function removeSensitiveKeys(
 }
 
 /**
- * Deeply breaks any circular dependencies.
+ * Deeply breaks any circular references.
  * @param {object} object
  * @param {any[]} parents
  * @returns
  */
-export function breakCircularDependencies(object: any, parents?: any[]): any {
+export function breakCircularReferences(object: any, parents?: any[]): any {
   return removeSensitiveKeys(object, [], parents);
 }
