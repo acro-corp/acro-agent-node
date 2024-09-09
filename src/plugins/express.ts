@@ -235,8 +235,9 @@ function bootstrap<T>(
                 );
 
                 if (
-                  agent.shouldTrackAction(action) ||
-                  req[ExpressTrackSymbol] === true // force track
+                  req[ExpressTrackSymbol] !== false &&
+                  (agent.shouldTrackAction(action) ||
+                    req[ExpressTrackSymbol] === true) // force track
                 ) {
                   agent.trackAction(action);
                 }
