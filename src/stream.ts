@@ -7,10 +7,13 @@
 import { Writable, WritableOptions } from "stream";
 import { Logger } from "./agent";
 import { Action } from "./action";
+import { Engine } from "@acro-sdk/common-store";
 
 class ActionStream extends Writable {
   _applicationId: string = "";
+  _companyId: string = "";
   _secret: string = "";
+  _store: Engine<any> | null = null;
   _url: string = "";
   _userAgent: string = "";
   _logger: Logger | null = null;
@@ -18,13 +21,17 @@ class ActionStream extends Writable {
   constructor(
     {
       applicationId,
+      companyId,
       secret,
+      store,
       url,
       logger,
       userAgent,
     }: {
       applicationId: string;
+      companyId?: string;
       secret: string;
+      store?: Engine<any> | null;
       url?: string;
       logger: Logger;
       userAgent?: string;
@@ -44,11 +51,46 @@ class ActionStream extends Writable {
     if (userAgent) {
       this._userAgent = userAgent;
     }
+
+    // only read companyId if you're passing in your own store
+    // otherwise it's derived from applicationId
+    if (store) {
+      this._store = store;
+
+      if (companyId) {
+        this._companyId = companyId;
+      }
+    }
   }
 
   async _writev(chunks: { chunk: Action }[], next: Function) {
     this._logger?.debug(`ActionStream.writev: ${JSON.stringify(chunks)}`);
 
+    // if store is passed in, prefer that
+    if (this._store) {
+      try {
+        await this._store.createManyActions(
+          chunks.map((chunk) => {
+            return {
+              companyId: this._companyId,
+              ...(chunk?.chunk || {}),
+            };
+          })
+        );
+
+        this._logger?.error(
+          `ActionStream.writev wrote to store: ${chunks?.length} actions`
+        );
+      } catch (err: any) {
+        this._logger?.error(
+          `ActionStream.writev Store error: ${err.name} ${err.message}}`
+        );
+      }
+
+      return;
+    }
+
+    // otherwise do HTTP call
     const action = chunks?.[0]?.chunk;
     const userAgent =
       this._userAgent ||

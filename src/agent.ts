@@ -15,6 +15,7 @@ import { LogLevel } from "./logger";
 import { Action } from "./action";
 import { ActionStream } from "./stream";
 import { getUrl } from "./url";
+import { Engine } from "@acro-sdk/common-store";
 
 interface TrackOptions {
   actions?: Record<
@@ -49,6 +50,8 @@ class AcroAgent {
   _frameworkVersion: string | null = null;
   _streamOptions: WritableOptions | null = null;
   _actionStream: ActionStream;
+  _companyId: string = "";
+  _store: Engine<any> | null = null;
 
   // logger helper function
   logger: Logger;
@@ -64,6 +67,8 @@ class AcroAgent {
     track?: TrackOptions;
     frameworks?: Record<string, any>;
     streamOptions?: WritableOptions;
+    store?: Engine<any> | null;
+    companyId?: string;
   }) {
     this._applicationId = options?.applicationId;
     this._secret = options?.secret;
@@ -120,6 +125,17 @@ class AcroAgent {
       all: this.log.bind(this, LogLevel.all),
     };
 
+    // direct integration with store, if passed in
+    if (options.store) {
+      this._store = options.store;
+
+      // only read companyId if you're passing in your own store
+      // otherwise it's derived from applicationId
+      if (options.companyId) {
+        this._companyId = options.companyId;
+      }
+    }
+
     // initialize write stream
     this._actionStream = new ActionStream(
       {
@@ -127,6 +143,8 @@ class AcroAgent {
         secret: this._secret,
         url: this._url,
         logger: this.logger,
+        store: this._store,
+        companyId: this._companyId,
       },
       (this._streamOptions || {
         highWaterMark: 10,

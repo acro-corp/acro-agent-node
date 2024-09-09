@@ -25,11 +25,26 @@ interface Response {}
 export function acroTrack(sensitiveKeys?: string[]) {
   return (
     req: Request,
-    res: Response,
+    _res: Response,
     next: (err?: Error, data?: any) => void
   ) => {
     req[ExpressTrackSymbol] = true;
     req[ExpressSensitiveKeysSymbol] = sensitiveKeys;
+    next();
+  };
+}
+
+/**
+ * Middleware that forces an Express route to be ignored.
+ * @returns
+ */
+export function acroIgnore() {
+  return (
+    req: Request,
+    _res: Response,
+    next: (err?: Error, data?: any) => void
+  ) => {
+    req[ExpressTrackSymbol] = false;
     next();
   };
 }
