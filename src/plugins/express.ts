@@ -26,8 +26,6 @@ import { get, removeSensitiveKeys } from "../utils";
 
 const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
-const ExpressRequestStartSymbol = Symbol("AcroExpressRequestStart");
-const ExpressRequestHrTimeSymbol = Symbol("AcroExpressRequestHrTime");
 export const ExpressTrackSymbol = Symbol("AcroExpressTrack");
 export const ExpressSensitiveKeysSymbol = Symbol("AcroExpressSensitiveKeys");
 
@@ -167,102 +165,105 @@ function bootstrap<T>(
         }
 
         const handle = function (req: any, res: any, next: any) {
-          // set start time
-          if (!req[ExpressRequestHrTimeSymbol]) {
-            req[ExpressRequestHrTimeSymbol] = process.hrtime();
-          }
-          if (!req[ExpressRequestStartSymbol]) {
-            req[ExpressRequestStartSymbol] = new Date().toISOString();
-          }
+          agent.context?.runOnce(
+            {
+              start: new Date().toISOString(),
+              startHrTime: process.hrtime(),
+            },
+            () => {
+              wrap(res, "end", (original: any) => {
+                return function end() {
+                  agent.logger?.debug(
+                    `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
+                  );
 
-          wrap(res, "end", (original: any) => {
-            return function end() {
-              agent.logger?.debug(
-                `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
-              );
+                  const context = agent.context?.get();
 
-              let time;
+                  let time;
 
-              if (req[ExpressRequestHrTimeSymbol]) {
-                const diff = process.hrtime(req[ExpressRequestHrTimeSymbol]);
-                time = Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
-              }
+                  if (context?.startHrTime) {
+                    const diff = process.hrtime(context?.startHrTime);
+                    time =
+                      Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
+                  }
 
-              const timestamp =
-                req[ExpressRequestStartSymbol] || new Date().toISOString();
+                  const timestamp = context?.start || new Date().toISOString();
 
-              const action = agent.createAction({
-                timestamp,
-                action: {
-                  type: "HTTP",
-                  verb: req.method,
-                  object: getFullRoute(req),
-                },
-                agents: [
-                  {
-                    type: "USER",
-                    id: getUserId(req),
-                    meta: {
-                      ip: getIp(req),
-                      userAgent: req.get("User-Agent"),
+                  const action = agent.createAction({
+                    timestamp,
+                    traceIds: [context?.traceId || ""].filter((v) => v),
+                    action: {
+                      type: "HTTP",
+                      verb: req.method,
+                      object: getFullRoute(req),
                     },
-                  },
-                  {
-                    type: "SERVICE",
-                    id: hostname(),
-                    meta: { hostname: hostname() },
-                  },
-                ],
-                request: {
-                  params: removeSensitiveKeys(
-                    req?.params,
-                    req[ExpressSensitiveKeysSymbol]
-                  ),
-                  query: removeSensitiveKeys(
-                    req?.query,
-                    req[ExpressSensitiveKeysSymbol]
-                  ),
-                  body: removeSensitiveKeys(
-                    req?.body,
-                    req[ExpressSensitiveKeysSymbol]
-                  ),
-                },
-                response: {
-                  status: res.statusCode,
-                  time,
-                },
+                    agents: [
+                      {
+                        type: "USER",
+                        id: getUserId(req),
+                        meta: {
+                          ip: getIp(req),
+                          userAgent: req.get("User-Agent"),
+                        },
+                      },
+                      {
+                        type: "SERVICE",
+                        id: hostname(),
+                        meta: { hostname: hostname() },
+                      },
+                    ],
+                    request: {
+                      params: removeSensitiveKeys(
+                        req?.params,
+                        req[ExpressSensitiveKeysSymbol]
+                      ),
+                      query: removeSensitiveKeys(
+                        req?.query,
+                        req[ExpressSensitiveKeysSymbol]
+                      ),
+                      body: removeSensitiveKeys(
+                        req?.body,
+                        req[ExpressSensitiveKeysSymbol]
+                      ),
+                    },
+                    response: {
+                      status: res.statusCode,
+                      time,
+                    },
+                  });
+
+                  agent.logger?.debug(
+                    `express.createAction: ${JSON.stringify(
+                      action
+                    )} – shouldTrack=${agent.shouldTrackAction(action)}`
+                  );
+
+                  if (
+                    req[ExpressTrackSymbol] !== false &&
+                    (agent.shouldTrackAction(action) ||
+                      req[ExpressTrackSymbol] === true) // force track
+                  ) {
+                    agent.trackAction(action);
+                  }
+
+                  return original.apply(this, arguments);
+                };
               });
 
-              agent.logger?.debug(
-                `express.createAction: ${JSON.stringify(
-                  action
-                )} – shouldTrack=${agent.shouldTrackAction(action)}`
-              );
+              if (!layer.route && layerPath && typeof next === "function") {
+                safePush(req, ExpressMountStackSymbol, layerPath);
 
-              if (
-                req[ExpressTrackSymbol] !== false &&
-                (agent.shouldTrackAction(action) ||
-                  req[ExpressTrackSymbol] === true) // force track
-              ) {
-                agent.trackAction(action);
+                arguments[2] = function (nextArg: any) {
+                  if (!nextArg || nextArg === "route" || nextArg === "router") {
+                    req[ExpressMountStackSymbol].pop();
+                  }
+                  return next.apply(this, arguments);
+                };
               }
 
               return original.apply(this, arguments);
-            };
-          });
-
-          if (!layer.route && layerPath && typeof next === "function") {
-            safePush(req, ExpressMountStackSymbol, layerPath);
-
-            arguments[2] = function (nextArg: any) {
-              if (!nextArg || nextArg === "route" || nextArg === "router") {
-                req[ExpressMountStackSymbol].pop();
-              }
-              return next.apply(this, arguments);
-            };
-          }
-
-          return original.apply(this, arguments);
+            }
+          );
         };
 
         return handle;
