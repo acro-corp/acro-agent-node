@@ -1,6 +1,6 @@
 {
   "name": "@acro-sdk/agent",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/node": "^22.5.4",
     "@types/semver": "^7.5.8",
+    "@types/uuid": "^10.0.0",
     "esbuild": "^0.23.1",
     "esbuild-plugin-tsc": "^0.4.0",
     "typescript": "^5.5.4",
@@ -28,6 +29,7 @@
     "@acro-sdk/common-store": "0.0.3",
     "import-in-the-middle": "^1.11.0",
     "require-in-the-middle": "^7.4.0",
-    "semver": "^7.6.3"
+    "semver": "^7.6.3",
+    "uuid": "^10.0.0"
   }
 }

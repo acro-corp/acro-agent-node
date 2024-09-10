@@ -8,6 +8,9 @@ import { Hook as RequireHook } from "require-in-the-middle";
 import { Hook as ImportHook } from "import-in-the-middle";
 import { join } from "path";
 import { WritableOptions } from "stream";
+import semver from "semver";
+
+import { Engine } from "@acro-sdk/common-store";
 
 import { getImportPaths, getPlugin } from "./plugins";
 import { readFileSync } from "fs";
@@ -15,7 +18,7 @@ import { LogLevel } from "./logger";
 import { Action } from "./action";
 import { ActionStream } from "./stream";
 import { getUrl } from "./url";
-import { Engine } from "@acro-sdk/common-store";
+import { ContextManager } from "./context";
 
 interface TrackOptions {
   actions?: Record<
@@ -52,6 +55,9 @@ class AcroAgent {
   _actionStream: ActionStream;
   _companyId: string = "";
   _store: Engine<any> | null = null;
+
+  // async context
+  context: ContextManager | null = null;
 
   // logger helper function
   logger: Logger;
@@ -170,6 +176,9 @@ class AcroAgent {
         },
       },
     };
+
+    this.context = new ContextManager();
+    this.context.enable();
 
     this._restartHooks();
   }
