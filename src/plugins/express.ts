@@ -52,6 +52,10 @@ function bootstrap<T>(
       ? express?.Router && express?.Router.prototype
       : express?.Router;
 
+  // express layers:
+  // - 'router': router
+  // - 'bound dispatch': request handler
+
   wrap<typeof router>(router, "route", (original: Function) => {
     return function route(path: any) {
       const route = original.apply(this, arguments);
@@ -157,128 +161,109 @@ function bootstrap<T>(
       layer[ExpressLayerPatchedSymbol] = true;
 
       wrap(layer, "handle", function (original: any) {
-        let handle;
-
-        if (original.length !== 4) {
-          handle = function (req: any, res: any, next: any) {
-            // set start time
-            if (!req[ExpressRequestHrTimeSymbol]) {
-              req[ExpressRequestHrTimeSymbol] = process.hrtime();
-            }
-            if (!req[ExpressRequestStartSymbol]) {
-              req[ExpressRequestStartSymbol] = new Date().toISOString();
-            }
-
-            wrap(res, "end", (original: any) => {
-              return function end() {
-                agent.logger?.debug(
-                  `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
-                );
-
-                let time;
-
-                if (req[ExpressRequestHrTimeSymbol]) {
-                  const diff = process.hrtime(req[ExpressRequestHrTimeSymbol]);
-                  time =
-                    Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
-                }
-
-                const timestamp =
-                  req[ExpressRequestStartSymbol] || new Date().toISOString();
-
-                const action = agent.createAction({
-                  timestamp,
-                  action: {
-                    type: "HTTP",
-                    verb: req.method,
-                    object: getFullRoute(req),
-                  },
-                  agents: [
-                    {
-                      type: "USER",
-                      id: getUserId(req),
-                      meta: {
-                        ip: getIp(req),
-                        userAgent: req.get("User-Agent"),
-                      },
-                    },
-                    {
-                      type: "SERVICE",
-                      id: hostname(),
-                      meta: { hostname: hostname() },
-                    },
-                  ],
-                  request: {
-                    params: removeSensitiveKeys(
-                      req?.params,
-                      req[ExpressSensitiveKeysSymbol]
-                    ),
-                    query: removeSensitiveKeys(
-                      req?.query,
-                      req[ExpressSensitiveKeysSymbol]
-                    ),
-                    body: removeSensitiveKeys(
-                      req?.body,
-                      req[ExpressSensitiveKeysSymbol]
-                    ),
-                  },
-                  response: {
-                    status: res.statusCode,
-                    time,
-                  },
-                });
-
-                agent.logger?.debug(
-                  `express.createAction: ${JSON.stringify(
-                    action
-                  )} – shouldTrack=${agent.shouldTrackAction(action)}`
-                );
-
-                if (
-                  req[ExpressTrackSymbol] !== false &&
-                  (agent.shouldTrackAction(action) ||
-                    req[ExpressTrackSymbol] === true) // force track
-                ) {
-                  agent.trackAction(action);
-                }
-
-                return original.apply(this, arguments);
-              };
-            });
-
-            if (!layer.route && layerPath && typeof next === "function") {
-              safePush(req, ExpressMountStackSymbol, layerPath);
-
-              arguments[2] = function (nextArg: any) {
-                if (!nextArg || nextArg === "route" || nextArg === "router") {
-                  req[ExpressMountStackSymbol].pop();
-                }
-                return next.apply(this, arguments);
-              };
-            }
-
-            return original.apply(this, arguments);
-          };
-        } else {
-          handle = function (err: Error, req: any, res: any, next: any) {
-            // set start time
-            if (!req[ExpressRequestStartSymbol]) {
-              req[ExpressRequestStartSymbol] = process.hrtime();
-            }
-
-            agent.logger?.debug(
-              `express.Router.Layer.handle.${layer.name} wrapped error: ${req.method} ${req.originalUrl} ${err.name} ${err.message}`
-            );
-
-            return original.apply(this, arguments);
-          };
+        // ignore error middleware since it'll trigger handle later anyway
+        if (original.length === 4) {
+          return original;
         }
 
-        for (const prop in original) {
-          if (Object.prototype.hasOwnProperty.call(original, prop)) {
-            (handle as any)[prop] = original[prop];
+        const handle = function (req: any, res: any, next: any) {
+          // set start time
+          if (!req[ExpressRequestHrTimeSymbol]) {
+            req[ExpressRequestHrTimeSymbol] = process.hrtime();
           }
-        }
+          if (!req[ExpressRequestStartSymbol]) {
+            req[ExpressRequestStartSymbol] = new Date().toISOString();
+          }
+
+          wrap(res, "end", (original: any) => {
+            return function end() {
+              agent.logger?.debug(
+                `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
+              );
+
+              let time;
+
+              if (req[ExpressRequestHrTimeSymbol]) {
+                const diff = process.hrtime(req[ExpressRequestHrTimeSymbol]);
+                time = Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
+              }
+
+              const timestamp =
+                req[ExpressRequestStartSymbol] || new Date().toISOString();
+
+              const action = agent.createAction({
+                timestamp,
+                action: {
+                  type: "HTTP",
+                  verb: req.method,
+                  object: getFullRoute(req),
+                },
+                agents: [
+                  {
+                    type: "USER",
+                    id: getUserId(req),
+                    meta: {
+                      ip: getIp(req),
+                      userAgent: req.get("User-Agent"),
+                    },
+                  },
+                  {
+                    type: "SERVICE",
+                    id: hostname(),
+                    meta: { hostname: hostname() },
+                  },
+                ],
+                request: {
+                  params: removeSensitiveKeys(
+                    req?.params,
+                    req[ExpressSensitiveKeysSymbol]
+                  ),
+                  query: removeSensitiveKeys(
+                    req?.query,
+                    req[ExpressSensitiveKeysSymbol]
+                  ),
+                  body: removeSensitiveKeys(
+                    req?.body,
+                    req[ExpressSensitiveKeysSymbol]
+                  ),
+                },
+                response: {
+                  status: res.statusCode,
+                  time,
+                },
+              });
+
+              agent.logger?.debug(
+                `express.createAction: ${JSON.stringify(
+                  action
+                )} – shouldTrack=${agent.shouldTrackAction(action)}`
+              );
+
+              if (
+                req[ExpressTrackSymbol] !== false &&
+                (agent.shouldTrackAction(action) ||
+                  req[ExpressTrackSymbol] === true) // force track
+              ) {
+                agent.trackAction(action);
+              }
+
+              return original.apply(this, arguments);
+            };
+          });
+
+          if (!layer.route && layerPath && typeof next === "function") {
+            safePush(req, ExpressMountStackSymbol, layerPath);
+
+            arguments[2] = function (nextArg: any) {
+              if (!nextArg || nextArg === "route" || nextArg === "router") {
+                req[ExpressMountStackSymbol].pop();
+              }
+              return next.apply(this, arguments);
+            };
+          }
+
+          return original.apply(this, arguments);
+        };
 
         return handle;
       });
