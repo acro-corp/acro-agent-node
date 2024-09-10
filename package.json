@@ -1,6 +1,6 @@
 {
   "name": "@acro-sdk/agent",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
@@ -25,6 +25,7 @@
     "vitest": "^2.0.5"
   },
   "dependencies": {
+    "@acro-sdk/common-store": "0.0.1",
     "import-in-the-middle": "^1.11.0",
     "require-in-the-middle": "^7.4.0",
     "semver": "^7.6.3"
