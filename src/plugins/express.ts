@@ -116,7 +116,7 @@ function bootstrap<T>(
       {}
     );
 
-    return (req.baseUrl || "")
+    return (req.originalUrl || "")
       .split("/")
       .map((part: string) => paramToKeyMap[part] || part)
       .join("/");
@@ -227,7 +227,7 @@ function bootstrap<T>(
                       ),
                     },
                     response: {
-                      status: res.statusCode,
+                      status: res.statusCode?.toString(),
                       time,
                     },
                   });

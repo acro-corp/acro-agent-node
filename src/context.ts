@@ -16,6 +16,8 @@ export interface Context {
 }
 
 export class ContextManager {
+  // _asyncLocalStorage does not support Node.js < 14.
+  // TODO: Need to do a separate implementation using AsyncHooks
   private _asyncLocalStorage: AsyncLocalStorage<Context>;
 
   constructor() {

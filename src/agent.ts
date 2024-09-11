@@ -8,7 +8,6 @@ import { Hook as RequireHook } from "require-in-the-middle";
 import { Hook as ImportHook } from "import-in-the-middle";
 import { join } from "path";
 import { WritableOptions } from "stream";
-import semver from "semver";
 
 import { Engine } from "@acro-sdk/common-store";
 
@@ -255,7 +254,11 @@ class AcroAgent {
   trackAction(action: Action) {
     this.logger?.debug(`trackAction: ${JSON.stringify(action)}`);
 
-    this._actionStream?.write(action);
+    if (!this._actionStream) {
+      this.logger?.error(`trackAction object not instantiated`);
+    } else {
+      this._actionStream.write(action);
+    }
   }
 
   _createHook<T>(
