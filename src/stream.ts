@@ -87,7 +87,7 @@ class ActionStream extends Writable {
         );
       }
 
-      return;
+      return next();
     }
 
     // otherwise do HTTP call

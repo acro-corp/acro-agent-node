@@ -116,7 +116,7 @@ function bootstrap<T>(
       {}
     );
 
-    return (req.baseUrl || req.originalUrl || "")
+    return (req.originalUrl || "")
       .split("/")
       .map((part: string) => paramToKeyMap[part] || part)
       .join("/");

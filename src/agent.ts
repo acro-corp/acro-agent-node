@@ -254,7 +254,11 @@ class AcroAgent {
   trackAction(action: Action) {
     this.logger?.debug(`trackAction: ${JSON.stringify(action)}`);
 
-    this._actionStream?.write(action);
+    if (!this._actionStream) {
+      this.logger?.error(`trackAction object not instantiated`);
+    } else {
+      this._actionStream.write(action);
+    }
   }
 
   _createHook<T>(
