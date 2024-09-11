@@ -32,7 +32,12 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build
-        run: npm run build
+        run: npm run build:release
+      - name: Run fix-mjs.sh
+        run: |
+          chmod +x ./scripts/fix-mjs.sh
+          ./scripts/fix-mjs.sh
+        shell: bash
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
       - name: Release
