@@ -8,7 +8,6 @@ import { Hook as RequireHook } from "require-in-the-middle";
 import { Hook as ImportHook } from "import-in-the-middle";
 import { join } from "path";
 import { WritableOptions } from "stream";
-import semver from "semver";
 
 import { Engine } from "@acro-sdk/common-store";
 

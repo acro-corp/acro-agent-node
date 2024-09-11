@@ -227,7 +227,7 @@ function bootstrap<T>(
                       ),
                     },
                     response: {
-                      status: res.statusCode,
+                      status: res.statusCode?.toString(),
                       time,
                     },
                   });
