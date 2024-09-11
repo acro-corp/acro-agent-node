@@ -121,7 +121,6 @@ class ActionStream extends Writable {
         );
       }
     } catch (err: any) {
-      console.log("\n\n\n fetch error", err);
       this._logger?.error(
         `ActionStream.writev Error: ${err.name} ${err.message} ${err.stack}`
       );

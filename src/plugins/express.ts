@@ -40,10 +40,6 @@ function bootstrap<T>(
   // { userIdPath: 'auth.userId' }
   const frameworkOptions = agent.getFrameworkOptions("express");
 
-  agent.logger?.debug(
-    `express.frameworkOptions: ${JSON.stringify(frameworkOptions)}`
-  );
-
   // express 5 moves the router methods onto a prototype
   const router =
     version && satisfies(version as string, "^5")
@@ -117,7 +113,8 @@ function bootstrap<T>(
     );
 
     return (req.originalUrl || "")
-      .split("/")
+      .split("?")?.[0]
+      ?.split("/")
       .map((part: string) => paramToKeyMap[part] || part)
       .join("/");
   }
@@ -173,10 +170,6 @@ function bootstrap<T>(
             () => {
               wrap(res, "end", (original: any) => {
                 return function end() {
-                  agent.logger?.debug(
-                    `express.Router.Layer.handle.${layer.name} wrapped response: ${req.method} ${req.originalUrl} => ${res.statusCode}`
-                  );
-
                   const context = agent.context?.get();
 
                   let time;
