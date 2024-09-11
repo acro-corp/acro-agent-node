@@ -1,6 +1,6 @@
 {
   "name": "@acro-sdk/agent",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
@@ -22,6 +22,7 @@
     "@types/uuid": "^10.0.0",
     "esbuild": "^0.23.1",
     "esbuild-plugin-tsc": "^0.4.0",
+    "semantic-release": "^24.1.1",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   },
