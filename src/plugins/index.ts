@@ -16,11 +16,16 @@
  */
 
 import ExpressPlugin from "./express";
+import ClerkPlugin from "./clerk";
 
 export const PLUGINS = [
   {
     plugin: ExpressPlugin,
     importPath: "express",
+  },
+  {
+    plugin: ClerkPlugin,
+    importPath: "@clerk/clerk-sdk-node",
   },
 ];
 

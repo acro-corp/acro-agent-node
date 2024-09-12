@@ -16,13 +16,47 @@
  */
 
 /**
- * Deeply gets a key inside an object.
+ * Deeply gets a key inside an object, or calls a function on it
  * @param {object} object
- * @param {string} path - key to get, e.g. 'foo.bar' will get object[foo][bar]
+ * @param {string | Function} getter - key to get, e.g. 'foo.bar' will get object[foo][bar]
  * @returns
  */
-export function get(object: any, path: string) {
-  return (path || "").split(".").reduce((p: any, c: any) => p?.[c], object);
+export function get(object: any, getter: string | ((object: any) => string)) {
+  if (typeof getter === "string") {
+    return (getter || "").split(".").reduce((p: any, c: any) => p?.[c], object);
+  } else if (typeof getter === "function") {
+    return getter(object);
+  } else {
+    return;
+  }
+}
+
+/**
+ * Gets extra data to add to the Action object from frameworkOptions
+ * @param {object} frameworkOptions
+ * @param {object} object – the object to parse, e.g. `req` if Express
+ * @returns
+ */
+export function populateFrameworkData(frameworkOptions: any, object: any) {
+  const frameworkData: any = {};
+
+  Object.keys(frameworkOptions || {}).forEach((key) => {
+    if (
+      typeof frameworkOptions[key] === "object" &&
+      frameworkOptions[key] !== null
+    ) {
+      // recurse if it's a sub object
+      frameworkData[key] = populateFrameworkData(frameworkOptions[key], object);
+    } else if (typeof frameworkOptions[key] === "function") {
+      // if it's a function, call it on object
+      frameworkData[key] = frameworkOptions[key](object);
+    } else {
+      // otherwise just set it
+      frameworkData[key] = frameworkOptions[key];
+    }
+  });
+
+  return frameworkData;
 }
 
 /**

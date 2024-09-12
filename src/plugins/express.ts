@@ -33,7 +33,7 @@ import { hostname } from "os";
 
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
-import { get, removeSensitiveKeys } from "../utils";
+import { get, removeSensitiveKeys, populateFrameworkData } from "../utils";
 
 const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
@@ -47,9 +47,6 @@ function bootstrap<T>(
 ): T {
   // set framework
   agent.setFramework("express", version || null);
-
-  // { userIdPath: 'auth.userId' }
-  const frameworkOptions = agent.getFrameworkOptions("express");
 
   // express 5 moves the router methods onto a prototype
   const router =
@@ -146,14 +143,14 @@ function bootstrap<T>(
 
   /**
    * Gets the logged in user ID (if appropriate) from an Express Request object.
-   * If the userIdPath is passed into the framework options, it's used;
+   * If the agents.USER.userId is passed into the framework options, it's used;
    * otherwise we look in some standard places.
    * @param {express.Request} req
    * @returns {string} ip
    */
-  function getUserId(req: any) {
-    return frameworkOptions?.userIdPath
-      ? get(req, frameworkOptions?.userIdPath)
+  function getUserId(frameworkOptions: any, req: any) {
+    return frameworkOptions?.agents?.USER?.userId
+      ? get(req, frameworkOptions?.agents?.USER?.userId)
       : req.userId ||
           req.user?.id ||
           req.session?.userId ||
@@ -193,6 +190,12 @@ function bootstrap<T>(
 
                   const timestamp = context?.start || new Date().toISOString();
 
+                  const frameworkOptions = agent.getFrameworkOptions("express");
+                  const frameworkData = populateFrameworkData(
+                    frameworkOptions,
+                    req
+                  );
+
                   const action = agent.createAction({
                     timestamp,
                     traceIds: [context?.traceId || ""].filter((v) => v),
@@ -204,10 +207,11 @@ function bootstrap<T>(
                     agents: [
                       {
                         type: "USER",
-                        id: getUserId(req),
+                        id: getUserId(frameworkOptions, req),
                         meta: {
                           ip: getIp(req),
                           userAgent: req.get("User-Agent"),
+                          ...(frameworkData?.agents?.USER?.meta || {}),
                         },
                       },
                       {

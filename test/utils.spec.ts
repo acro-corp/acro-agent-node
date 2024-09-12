@@ -16,7 +16,12 @@
  */
 
 import { describe, expect, test } from "vitest";
-import { breakCircularReferences, removeSensitiveKeys } from "../src/utils";
+import {
+  breakCircularReferences,
+  get,
+  populateFrameworkData,
+  removeSensitiveKeys,
+} from "../src/utils";
 
 describe("removeSensitiveKeys()", () => {
   test("works with number primitive", () => {
@@ -498,6 +503,72 @@ describe("breakCircularReferences()", () => {
           f: "four",
         },
       ],
+    });
+  });
+});
+
+describe("get()", () => {
+  test("works with static use case", () => {
+    expect(
+      get(
+        {
+          userId: "1",
+          auth: {
+            userId: "2",
+          },
+        },
+        "auth.userId"
+      )
+    ).toStrictEqual("2");
+  });
+
+  test("works with function use case", () => {
+    expect(
+      get(
+        {
+          userId: "1",
+          auth: {
+            userId: "2",
+          },
+        },
+        (req: any) => req?.auth?.userId
+      )
+    ).toStrictEqual("2");
+  });
+});
+
+describe("populateFrameworkData()", () => {
+  test("works with typical Express use case", () => {
+    expect(
+      populateFrameworkData(
+        {
+          agents: {
+            USER: {
+              userId: (req: any) => req.userId,
+              meta: {
+                ip: "127.0.0.1",
+                clerkUserId: (req: any) => req.auth?.userId,
+              },
+            },
+          },
+        },
+        {
+          userId: "1",
+          auth: {
+            userId: "2",
+          },
+        }
+      )
+    ).toStrictEqual({
+      agents: {
+        USER: {
+          userId: "1",
+          meta: {
+            ip: "127.0.0.1",
+            clerkUserId: "2",
+          },
+        },
+      },
     });
   });
 });
