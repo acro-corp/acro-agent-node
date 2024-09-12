@@ -30,13 +30,18 @@ import { ActionStream } from "./stream";
 import { getUrl } from "./url";
 import { ContextManager } from "./context";
 
+// filters for what we want to track
 interface TrackOptions {
+  // { actions: { <type>: { <key>: <value> } } }
+  // e.g. { actions: { HTTP: { methods: ["POST"] } } }
   actions?: Record<
     string,
     {
       methods?: string[]; // defaults to ["POST", "PATCH", "PUT", "DELETE"]
     }
   >;
+  // { request: { <type>: <boolean> } }
+  // e.g. { request: { query: true, body: false } }
   request?: Record<string, boolean>;
 }
 
@@ -220,6 +225,17 @@ class AcroAgent {
 
   getFrameworkOptions(framework: string) {
     return this._frameworks?.[framework];
+  }
+
+  setFrameworkOptions(framework: string, options: any) {
+    if (!this._frameworks) {
+      this._frameworks = {};
+    }
+
+    this._frameworks[framework] = {
+      ...(this._frameworks[framework] || {}),
+      ...options,
+    };
   }
 
   shouldTrackAction(action: any) {
