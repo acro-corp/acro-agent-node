@@ -53,7 +53,7 @@ function bootstrap<T>(
         ...(expressFrameworkOptions?.agents?.USER || {}),
         meta: {
           ...(expressFrameworkOptions?.agents?.USER?.meta || {}),
-          clerkUserId: (req: any) => req.auth?.userId,
+          clerkUserId: (req: any) => req?.auth?.userId,
         },
       },
     },
