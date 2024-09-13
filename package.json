@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@acro-sdk/common-store": "^0.1.0",
-    "@acro-sdk/opensearch-store": "^0.0.9",
     "import-in-the-middle": "^1.11.0",
     "require-in-the-middle": "^7.4.0",
     "semver": "^7.6.3",
