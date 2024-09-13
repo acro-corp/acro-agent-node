@@ -33,6 +33,7 @@ import { hostname } from "os";
 import { get, removeSensitiveKeys } from "@acro-sdk/common-store";
 
 import { AcroAgent } from "../agent";
+import { Span } from "../span";
 import { wrap } from "../wrapper";
 import { populateFrameworkData } from "../utils";
 
@@ -171,108 +172,103 @@ function bootstrap<T>(
         }
 
         const handle = function (req: any, res: any, next: any) {
-          agent.context?.runOnce(
-            {
-              start: new Date().toISOString(),
-              startHrTime: process.hrtime(),
-            },
-            () => {
-              wrap(res, "end", (original: any) => {
-                return function end() {
-                  const context = agent.context?.get();
+          agent.context?.runOnce({}, () => {
+            wrap(res, "end", (original: any) => {
+              return function end() {
+                const span = agent.context?.getData();
 
-                  let time;
+                let time;
 
-                  if (context?.startHrTime) {
-                    const diff = process.hrtime(context?.startHrTime);
-                    time =
-                      Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
-                  }
+                if (span?.startHrTime) {
+                  const diff = process.hrtime(span?.startHrTime);
+                  time =
+                    Math.round(1e6 * (diff[0] * 1e3 + diff[1] * 1e-6)) / 1e6;
+                }
 
-                  const timestamp = context?.start || new Date().toISOString();
+                const timestamp = span?.start || new Date().toISOString();
 
-                  const frameworkOptions = agent.getFrameworkOptions("express");
-                  const frameworkData = populateFrameworkData(
-                    frameworkOptions,
-                    req
-                  );
+                const frameworkOptions = agent.getFrameworkOptions("express");
+                const frameworkData = populateFrameworkData(
+                  frameworkOptions,
+                  req
+                );
 
-                  const action = agent.createAction({
-                    timestamp,
-                    traceIds: [context?.traceId || ""].filter((v) => v),
-                    action: {
-                      type: "HTTP",
-                      verb: req.method,
-                      object: getFullRoute(req),
-                    },
-                    agents: [
-                      {
-                        type: "USER",
-                        id: getUserId(frameworkOptions, req),
-                        meta: {
-                          ip: getIp(req),
-                          userAgent: req.get("User-Agent"),
-                          ...(frameworkData?.agents?.USER?.meta || {}),
-                        },
+                const action = agent.createAction({
+                  timestamp,
+                  traceIds: [span?.traceId || ""].filter((v) => v),
+                  action: {
+                    type: "HTTP",
+                    verb: req.method,
+                    object: getFullRoute(req),
+                  },
+                  agents: [
+                    {
+                      type: "USER",
+                      id: getUserId(frameworkOptions, req),
+                      meta: {
+                        ip: getIp(req),
+                        userAgent: req.get("User-Agent"),
+                        ...(frameworkData?.agents?.USER?.meta || {}),
                       },
-                      {
-                        type: "SERVICE",
-                        id: hostname(),
-                        meta: { hostname: hostname() },
-                      },
-                    ],
-                    request: {
-                      params: removeSensitiveKeys(
-                        req?.params,
-                        req[ExpressSensitiveKeysSymbol]
-                      ),
-                      query: removeSensitiveKeys(
-                        req?.query,
-                        req[ExpressSensitiveKeysSymbol]
-                      ),
-                      body: removeSensitiveKeys(
-                        req?.body,
-                        req[ExpressSensitiveKeysSymbol]
-                      ),
                     },
-                    response: {
-                      status: res.statusCode?.toString(),
-                      time,
+                    {
+                      type: "SERVICE",
+                      id: hostname(),
+                      meta: { hostname: hostname() },
                     },
-                  });
+                  ],
+                  request: {
+                    params: removeSensitiveKeys(
+                      req?.params,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
+                    query: removeSensitiveKeys(
+                      req?.query,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
+                    body: removeSensitiveKeys(
+                      req?.body,
+                      req[ExpressSensitiveKeysSymbol]
+                    ),
+                  },
+                  response: {
+                    status: res.statusCode?.toString(),
+                    time,
+                  },
+                  changes: span?.changes,
+                });
 
-                  agent.logger?.debug(
-                    `express.createAction: ${JSON.stringify(
-                      action
-                    )} – shouldTrack=${agent.shouldTrackAction(action)}`
-                  );
+                agent.logger?.debug(
+                  `express.createAction: ${JSON.stringify(
+                    action
+                  )} – shouldTrack=${agent.shouldTrackAction(action)}`
+                );
 
-                  if (
-                    req[ExpressTrackSymbol] !== false &&
-                    (agent.shouldTrackAction(action) ||
-                      req[ExpressTrackSymbol] === true) // force track
-                  ) {
-                    agent.trackAction(action);
-                  }
+                if (
+                  req[ExpressTrackSymbol] !== false &&
+                  (agent.shouldTrackAction(action) ||
+                    req[ExpressTrackSymbol] === true) // force track
+                ) {
+                  agent.trackAction(action);
+                }
 
-                  return original.apply(this, arguments);
-                };
-              });
+                return original.apply(this, arguments);
+              };
+            });
 
-              if (!layer.route && layerPath && typeof next === "function") {
-                safePush(req, ExpressMountStackSymbol, layerPath);
+            if (!layer.route && layerPath && typeof next === "function") {
+              safePush(req, ExpressMountStackSymbol, layerPath);
 
-                arguments[2] = function (nextArg: any) {
-                  if (!nextArg || nextArg === "route" || nextArg === "router") {
-                    req[ExpressMountStackSymbol].pop();
-                  }
-                  return next.apply(this, arguments);
-                };
-              }
-
-              return original.apply(this, arguments);
+              arguments[2] = function (nextArg: any) {
+                if (!nextArg || nextArg === "route" || nextArg === "router") {
+                  req[ExpressMountStackSymbol].pop();
+                }
+                return next.apply(this, arguments);
+              };
             }
-          );
+
+            return original.apply(this, arguments);
+          });
         };
 
         return handle;
