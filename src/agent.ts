@@ -25,7 +25,7 @@ import { Engine } from "@acro-sdk/common-store";
 import { getImportPaths, getPlugin } from "./plugins";
 import { readFileSync } from "fs";
 import { LogLevel } from "./logger";
-import { Action } from "./action";
+import { Action } from "@acro-sdk/common-store";
 import { ActionStream } from "./stream";
 import { getUrl } from "./url";
 import { ContextManager } from "./context";

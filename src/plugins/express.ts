@@ -30,10 +30,11 @@
 
 import { satisfies } from "semver";
 import { hostname } from "os";
+import { get, removeSensitiveKeys } from "@acro-sdk/common-store";
 
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
-import { get, removeSensitiveKeys, populateFrameworkData } from "../utils";
+import { populateFrameworkData } from "../utils";
 
 const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");

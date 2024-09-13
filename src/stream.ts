@@ -17,8 +17,7 @@
 
 import { Writable, WritableOptions } from "stream";
 import { Logger } from "./agent";
-import { Action } from "./action";
-import { Engine } from "@acro-sdk/common-store";
+import { Action, Engine } from "@acro-sdk/common-store";
 
 class ActionStream extends Writable {
   _applicationId: string = "";
