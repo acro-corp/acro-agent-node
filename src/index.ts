@@ -15,7 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-export * from "./action";
 export * from "./agent";
 export * from "./helpers";
 export * from "./logger";
+
+// export some basic types too
+export { Action, Engine } from "@acro-sdk/common-store";
