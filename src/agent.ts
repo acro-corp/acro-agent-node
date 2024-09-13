@@ -50,32 +50,38 @@ export type Logger = Record<
   Function
 >;
 
+// singleton instance for access everywhere
+let _acroAgentInstance: AcroAgent;
+
 class AcroAgent {
+  // basic agent settings and authentication
   _applicationId: string = "";
   _secret: string = "";
-  _app: string = "";
-  _environment: string | undefined = process.env.NODE_ENV || "production";
   _url: string | undefined;
   _track: TrackOptions = {};
   _frameworks: Record<string, any> = {};
+  _store: Engine<any> | null = null;
+
+  // configuration to send with each action
+  _environment: string | undefined = process.env.NODE_ENV || "production";
+  _app: string = "";
+  _companyId: string = "";
+  _frameworkName: string | null = null;
+  _frameworkVersion: string | null = null;
+
+  // observability
   _logger: Function | null =
     typeof console !== "undefined" ? console.log : null;
   _logLevel: LogLevel = LogLevel.warn;
-  _hooksStarted: boolean = false;
+  logger: Logger; // public logger function
+
+  // instrumentations
   _requireHook: RequireHook | null = null;
   _importHook: ImportHook | null = null;
-  _frameworkName: string | null = null;
-  _frameworkVersion: string | null = null;
+  _hooksStarted: boolean = false;
   _streamOptions: WritableOptions | null = null;
   _actionStream: ActionStream;
-  _companyId: string = "";
-  _store: Engine<any> | null = null;
-
-  // async context
-  context: ContextManager | null = null;
-
-  // logger helper function
-  logger: Logger;
+  context: ContextManager | null = null; // public async context
 
   constructor(options: {
     applicationId: string;
@@ -196,6 +202,8 @@ class AcroAgent {
     this.context.enable();
 
     this._restartHooks();
+
+    _acroAgentInstance = this;
   }
 
   log(level: LogLevel, message?: string, ...args: any) {
@@ -334,8 +342,10 @@ class AcroAgent {
       this._importHook.unhook();
     }
 
+    const importPaths = getImportPaths();
+
     this._requireHook = new RequireHook(
-      getImportPaths(),
+      importPaths,
       { internals: true },
       (exports, name, basedir) => {
         return this._createHook<typeof exports>(
@@ -348,7 +358,7 @@ class AcroAgent {
     );
 
     this._importHook = new ImportHook(
-      getImportPaths(),
+      importPaths,
       { internals: true },
       (exports, name, basedir) => {
         return this._createHook<typeof exports>(
@@ -374,4 +384,4 @@ class AcroAgent {
   }
 }
 
-export { AcroAgent };
+export { AcroAgent, _acroAgentInstance as acroAgent };

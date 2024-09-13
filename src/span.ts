@@ -15,5 +15,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-export * from "./express";
-export * from "./prisma";
+import { Action } from "@acro-sdk/common-store";
+
+export interface SpanData {
+  traceId?: string;
+  start?: string;
+  startHrTime?: [number, number];
+  changes?: Action["changes"];
+}
+
+export class Span {
+  _data: SpanData;
+
+  constructor(data?: SpanData | null) {
+    this._data = {
+      start: new Date().toISOString(),
+      startHrTime: process.hrtime(),
+      ...(data || {}),
+    };
+  }
+
+  set(data?: SpanData | null) {
+    this._data = {
+      ...this._data,
+      ...(data || {}),
+    };
+  }
+
+  trackChange(change?: NonNullable<Action["changes"]>[0]) {
+    if (change) {
+      this._data.changes = [...(this._data.changes || []), change];
+    }
+  }
+
+  data() {
+    return this._data;
+  }
+}

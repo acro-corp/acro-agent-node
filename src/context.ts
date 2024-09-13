@@ -18,12 +18,11 @@
 import { Action } from "@acro-sdk/common-store";
 import { AsyncLocalStorage } from "async_hooks";
 import { v4 } from "uuid";
+import { Span, SpanData } from "./span";
 
 export interface Context {
   traceId?: string;
-  startHrTime?: [number, number];
-  start?: string;
-  action?: Action;
+  span?: Span;
 }
 
 export class ContextManager {
@@ -36,25 +35,42 @@ export class ContextManager {
   }
 
   active(): AsyncLocalStorage<Context> {
-    return this._asyncLocalStorage ?? {};
+    return this._asyncLocalStorage || {};
   }
 
-  runOnce(context: Context | null, next: Function) {
-    if (this.active()?.getStore()?.traceId) {
+  get() {
+    return this.active()?.getStore?.();
+  }
+
+  runOnce(data: SpanData | null, next: Function) {
+    if (this.get()?.traceId) {
       return next();
     }
 
-    this.active().run(
+    const traceId = `acro-${v4()}`;
+
+    this.active()?.run?.(
       {
-        traceId: `acro-${v4()}`,
-        ...(context || {}),
+        traceId,
+        span: new Span({
+          ...(data || {}),
+          traceId,
+        }),
       },
       () => next()
     );
   }
 
-  get() {
-    return this.active().getStore();
+  setData(data?: SpanData | null) {
+    return this.get()?.span?.set(data);
+  }
+
+  trackChange(change: NonNullable<Action["changes"]>[0]) {
+    return this.get()?.span?.trackChange(change);
+  }
+
+  getData() {
+    return this.get()?.span?.data();
   }
 
   enable(): this {
@@ -62,7 +78,7 @@ export class ContextManager {
   }
 
   disable(): this {
-    this._asyncLocalStorage.disable();
+    this._asyncLocalStorage?.disable?.();
     return this;
   }
 }

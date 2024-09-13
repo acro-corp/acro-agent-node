@@ -21,18 +21,26 @@ import ClerkPlugin from "./clerk";
 export const PLUGINS = [
   {
     plugin: ExpressPlugin,
-    importPath: "express",
+    importPaths: ["express"],
   },
   {
     plugin: ClerkPlugin,
-    importPath: "@clerk/clerk-sdk-node",
+    importPaths: ["@clerk/clerk-sdk-node"],
   },
+  // the prisma require() hook is never called ?_?
+  // {
+  //   plugin: PrismaPlugin,
+  //   importPaths: ["@prisma/client"],
+  // },
 ];
 
 export function getImportPaths() {
-  return PLUGINS.map((plugin) => plugin.importPath);
+  return PLUGINS.reduce(
+    (p, plugin) => p.concat(plugin.importPaths),
+    [] as string[]
+  );
 }
 
 export function getPlugin(name: string) {
-  return PLUGINS.find((plugin) => plugin.importPath === name)?.plugin;
+  return PLUGINS.find((plugin) => plugin.importPaths?.includes(name))?.plugin;
 }
