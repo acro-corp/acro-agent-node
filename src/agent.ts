@@ -29,6 +29,7 @@ import { Action } from "@acro-sdk/common-store";
 import { ActionStream } from "./stream";
 import { getUrl } from "./url";
 import { ContextManager } from "./context";
+import { AcroMask, MaskLevel } from "@acro-sdk/mask";
 
 // filters for what we want to track
 interface TrackOptions {
@@ -83,6 +84,9 @@ class AcroAgent {
   _actionStream: ActionStream;
   context: ContextManager | null = null; // public async context
 
+  // utilities
+  woMask: AcroMask;
+
   constructor(options: {
     applicationId: string;
     secret: string;
@@ -96,6 +100,10 @@ class AcroAgent {
     streamOptions?: WritableOptions;
     store?: Engine<any> | null;
     companyId?: string;
+    maskOptions?: {
+      removeFields?: string[];
+      saveFields?: string[];
+    };
   }) {
     this._applicationId = options?.applicationId;
     this._secret = options?.secret;
@@ -106,7 +114,7 @@ class AcroAgent {
       // try to grab from cwd
       try {
         const name = JSON.parse(
-          readFileSync(join(process.cwd(), "package.json"), "utf-8")
+          readFileSync(join(process.cwd(), "package.json"), "utf-8"),
         )?.name;
 
         if (name) {
@@ -176,7 +184,7 @@ class AcroAgent {
       (this._streamOptions || {
         highWaterMark: 10,
         objectMode: true,
-      }) as WritableOptions
+      }) as WritableOptions,
     );
 
     // initialize what to track w/ defaults
@@ -202,6 +210,13 @@ class AcroAgent {
     this.context.enable();
 
     this._restartHooks();
+
+    this.woMask = new AcroMask({
+      maskLevel: MaskLevel.REMOVE,
+      logger: this._logger as Function,
+      logLevel: this._logLevel,
+      ...(options.maskOptions || {}),
+    });
 
     _acroAgentInstance = this;
   }
@@ -251,7 +266,7 @@ class AcroAgent {
     if (
       this._track?.actions?.[action?.action?.type]?.methods &&
       !this._track?.actions?.[action?.action?.type]?.methods?.includes(
-        action?.action?.verb
+        action?.action?.verb,
       )
     ) {
       return false;
@@ -261,7 +276,7 @@ class AcroAgent {
   }
 
   createAction(action: Action): Action {
-    const { request, ...rest } = action || {};
+    const { request, meta, response, ...rest } = action || {};
 
     // filter out request params that we don't want
     Object.keys(request || {}).forEach((key) => {
@@ -270,11 +285,27 @@ class AcroAgent {
       }
     });
 
+    const changes = action.changes?.map((change) => {
+      return {
+        ...change,
+        ...(change.meta ? { meta: this.woMask.maskPII(change.meta) } : {}),
+      };
+    });
+
+    const agents = (action.agents || []).map((agent) => {
+      return {
+        ...agent,
+        ...(agent.meta ? { meta: this.woMask.maskPII(agent.meta) } : {}),
+      };
+    });
+
     return {
       ...rest,
-      request: {
-        ...request,
-      },
+      ...(request ? { request: this.woMask.maskPII(request) } : {}),
+      ...(response ? { response: this.woMask.maskPII(response) } : {}),
+      ...(meta ? { meta: this.woMask.maskPII(meta) } : {}),
+      ...(changes ? changes : {}),
+      agents,
       timestamp: action.timestamp || new Date().toISOString(),
       clientId: this._applicationId,
       app: this._app,
@@ -300,14 +331,14 @@ class AcroAgent {
     hookType: string,
     exports: T,
     name: string,
-    basedir: string | undefined | void
+    basedir: string | undefined | void,
   ) {
     let version: string = "";
 
     if (basedir) {
       try {
         version = JSON.parse(
-          readFileSync(join(basedir, "package.json"), "utf-8")
+          readFileSync(join(basedir, "package.json"), "utf-8"),
         )?.version as string;
       } catch (err) {
         // do nothing
@@ -315,7 +346,7 @@ class AcroAgent {
     }
 
     this.logger?.debug(
-      `_createHook: Creating ${hookType}: ${name}@${version} from ${basedir}`
+      `_createHook: Creating ${hookType}: ${name}@${version} from ${basedir}`,
     );
 
     try {
@@ -326,7 +357,7 @@ class AcroAgent {
       }
     } catch (err: any) {
       this.logger?.error(
-        `_createHook: Error loading ${hookType}: ${err.name}, ${err.message}, ${err.stack}`
+        `_createHook: Error loading ${hookType}: ${err.name}, ${err.message}, ${err.stack}`,
       );
     }
 
@@ -352,9 +383,9 @@ class AcroAgent {
           "RequireHook",
           exports,
           name,
-          basedir
+          basedir,
         );
-      }
+      },
     );
 
     this._importHook = new ImportHook(
@@ -365,9 +396,9 @@ class AcroAgent {
           "ImportHook",
           exports,
           name,
-          basedir
+          basedir,
         );
-      }
+      },
     );
   }
 
