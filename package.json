@@ -1,6 +1,6 @@
 {
   "name": "@acro-sdk/agent",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
@@ -24,10 +24,15 @@
     "esbuild-plugin-tsc": "^0.4.0",
     "semantic-release": "^24.1.1",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
+    "vitest": "^2.0.5",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.3",
+    "prettier": "^3.2.5",
+    "prettier-eslint": "^16.3.0"
   },
   "dependencies": {
     "@acro-sdk/common-store": "^0.2.0",
+    "@acro-sdk/mask": "^0.0.4",
     "import-in-the-middle": "^1.11.0",
     "require-in-the-middle": "^7.4.0",
     "semver": "^7.6.3",
