@@ -274,12 +274,13 @@ class AcroAgent {
   shouldTrackAction(action: any) {
     // if response status is in ignore list, or not in explicitly defined include list
     if (
-      (this._track?.response?.ignoreStatus?.length &&
+      action?.response?.status &&
+      ((this._track?.response?.ignoreStatus?.length &&
         this._track?.response?.ignoreStatus.includes(
           action?.response?.status
         )) ||
-      (this._track?.response?.status?.length &&
-        !this._track?.response?.status.includes(action?.response?.status))
+        (this._track?.response?.status?.length &&
+          !this._track?.response?.status.includes(action?.response?.status)))
     ) {
       return false;
     }
