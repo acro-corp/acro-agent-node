@@ -308,7 +308,7 @@ class AcroAgent {
       ...(request ? { request: this.woMask.maskPII(request) } : {}),
       ...(response ? { response: this.woMask.maskPII(response) } : {}),
       ...(meta ? { meta: this.woMask.maskPII(meta) } : {}),
-      ...(changes ? changes : {}),
+      ...(changes ? { changes } : {}),
       agents,
       timestamp: action.timestamp || new Date().toISOString(),
       clientId: this._applicationId,
