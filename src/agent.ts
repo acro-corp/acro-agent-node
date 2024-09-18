@@ -289,6 +289,10 @@ class AcroAgent {
       return {
         ...change,
         ...(change.meta ? { meta: this.woMask.maskPII(change.meta) } : {}),
+        ...(change.before
+          ? { before: this.woMask.maskPII(change.before) }
+          : {}),
+        ...(change.after ? { after: this.woMask.maskPII(change.after) } : {}),
       };
     });
 
