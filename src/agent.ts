@@ -39,6 +39,7 @@ interface TrackOptions {
     string,
     {
       methods?: string[]; // defaults to ["POST", "PATCH", "PUT", "DELETE"]
+      defaultMethods?: boolean; // if the default methods were used. defaults to true
     }
   >;
   // { request: { <type>: <boolean> } }
@@ -201,6 +202,9 @@ class AcroAgent {
               "PUT",
               "DELETE",
             ],
+            defaultMethods: options?.track?.actions?.HTTP?.methods
+              ? false
+              : true,
           },
         },
       },
@@ -262,6 +266,14 @@ class AcroAgent {
   }
 
   shouldTrackAction(action: any) {
+    // if any changes occurred, and track methods were not specifically configured
+    if (
+      action?.changes?.length &&
+      this._track?.actions?.[action?.action?.type]?.defaultMethods !== false
+    ) {
+      return true;
+    }
+
     // if not included in methods to track
     if (
       this._track?.actions?.[action?.action?.type]?.methods &&
