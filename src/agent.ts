@@ -288,11 +288,11 @@ class AcroAgent {
     const changes = action.changes?.map((change) => {
       return {
         ...change,
-        ...(change.meta ? { meta: this.woMask.maskPII(change.meta) } : {}),
+        ...(change.after ? { after: this.woMask.maskPII(change.after) } : {}),
         ...(change.before
           ? { before: this.woMask.maskPII(change.before) }
           : {}),
-        ...(change.after ? { after: this.woMask.maskPII(change.after) } : {}),
+        ...(change.meta ? { meta: this.woMask.maskPII(change.meta) } : {}),
       };
     });
 
