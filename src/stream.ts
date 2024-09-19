@@ -18,6 +18,7 @@
 import { Writable, WritableOptions } from "stream";
 import { Logger } from "./agent";
 import { Action, Engine } from "@acro-sdk/common-store";
+import fetch from "node-fetch";
 
 class ActionStream extends Writable {
   _applicationId: string = "";
