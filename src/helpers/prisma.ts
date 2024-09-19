@@ -50,12 +50,16 @@ export function acroPrismaExtension(Prisma: any): any {
                   operation,
                   id: createId,
                   after: result,
-                  meta: {
-                    args: {
-                      where: args?.where,
-                      // don't include data since it could have secrets in it
-                    },
-                  },
+                  ...(args?.where
+                    ? {
+                        meta: {
+                          args: {
+                            where: args?.where,
+                            // don't include data since it could have secrets in it
+                          },
+                        },
+                      }
+                    : {}),
                 });
                 break;
               case "delete":
@@ -69,12 +73,16 @@ export function acroPrismaExtension(Prisma: any): any {
                   model,
                   operation,
                   id: deleteId,
-                  meta: {
-                    args: {
-                      where: args?.where,
-                    },
-                    result,
-                  },
+                  ...(args?.where || result
+                    ? {
+                        meta: {
+                          args: {
+                            where: args?.where,
+                          },
+                          result,
+                        },
+                      }
+                    : {}),
                 });
                 break;
               case "createMany":
