@@ -151,14 +151,18 @@ function bootstrap<T>(
    * @returns {string} ip
    */
   function getUserId(frameworkOptions: any, req: any) {
-    return frameworkOptions?.agents?.USER?.userId
+    const userId = frameworkOptions?.agents?.USER?.userId
       ? get(req, frameworkOptions?.agents?.USER?.userId)
       : req.userId ||
-          req.user?.id ||
-          req.session?.userId ||
-          req.session?.user?.id ||
-          req.auth?.userId ||
-          req.auth?.user?.id;
+        req.user?.id ||
+        req.session?.userId ||
+        req.session?.user?.id ||
+        req.auth?.userId ||
+        req.auth?.user?.id;
+
+    if (userId) {
+      return userId.toString();
+    }
   }
 
   function patchLayer(layer: any, layerPath: any) {
