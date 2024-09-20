@@ -83,7 +83,7 @@ function bootstrap<T>(
     request: {
       params: true,
       query: true,
-      body: false,
+      body: true,
     },
   });
 
