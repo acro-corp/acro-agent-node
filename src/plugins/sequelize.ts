@@ -26,7 +26,6 @@ function bootstrap<T>(
   sequelize: any,
   version: string | undefined
 ): T {
-  console.log("\n\n\n\n\nsequelize", version);
   wrap<typeof sequelize.Sequelize.prototype>(
     sequelize.Sequelize.prototype,
     "query",
