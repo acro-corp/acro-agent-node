@@ -19,6 +19,7 @@ import ExpressPlugin from "./express";
 import ClerkPlugin from "./clerk";
 import MysqlPlugin from "./mysql";
 import Mysql2Plugin from "./mysql2";
+import SequelizePlugin from "./sequelize";
 
 export const PLUGINS = [
   {
@@ -41,6 +42,10 @@ export const PLUGINS = [
   {
     plugin: Mysql2Plugin,
     importPaths: ["mysql2"],
+  },
+  {
+    plugin: SequelizePlugin,
+    importPaths: ["sequelize"],
   },
 ];
 

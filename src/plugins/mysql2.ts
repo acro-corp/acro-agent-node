@@ -16,20 +16,10 @@
  */
 
 import { satisfies } from "semver";
-import { Parser } from "node-sql-parser";
 
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
-
-let _parser: any;
-
-function getParser() {
-  if (!_parser) {
-    _parser = new Parser();
-  }
-
-  return _parser;
-}
+import { getAst } from "../helpers/mysql";
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -90,13 +80,13 @@ function bootstrap<T>(
       }
 
       // we only care about this query if there's a change associated with it
-      const ast = getAst(sqlStr) || {};
+      const ast = getAst(agent, sqlStr);
 
       agent?.logger?.debug(`mysql2.wrapQuery got AST: ${JSON.stringify(ast)}`);
 
       const result = original.apply(this, arguments);
 
-      if (!sqlStr || !ast) {
+      if (!sqlStr || !ast?.operation) {
         return result;
       }
 
@@ -119,9 +109,9 @@ function bootstrap<T>(
             return original.apply(this, arguments);
           };
         });
-
-        return result;
       }
+
+      return result;
 
       function wrapCallback(cb: Function) {
         hasCallback = true;
@@ -133,41 +123,6 @@ function bootstrap<T>(
 
           return cb.apply(this, [err, ...args]);
         };
-      }
-
-      function getAst(sqlStr?: string) {
-        if (!sqlStr || typeof sqlStr !== "string") {
-          return;
-        }
-
-        let ast: any;
-
-        try {
-          ast = getParser().astify(sqlStr);
-        } catch (err: any) {
-          agent?.logger?.debug(
-            `mysql2.getAst error: ${err?.name} ${err?.message}`
-          );
-        }
-
-        let operation: string = "";
-
-        switch (ast?.type) {
-          case "delete":
-          case "update":
-            operation = ast.type;
-            break;
-          case "insert":
-            operation = "create";
-            break;
-        }
-
-        if (operation) {
-          return {
-            ...ast,
-            operation,
-          };
-        }
       }
 
       function trackChange() {
