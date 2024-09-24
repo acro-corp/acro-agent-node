@@ -17,6 +17,7 @@
 
 import ExpressPlugin from "./express";
 import ClerkPlugin from "./clerk";
+import MysqlPlugin from "./mysql";
 
 export const PLUGINS = [
   {
@@ -32,6 +33,10 @@ export const PLUGINS = [
   //   plugin: PrismaPlugin,
   //   importPaths: ["@prisma/client"],
   // },
+  {
+    plugin: MysqlPlugin,
+    importPaths: ["mysql"],
+  },
 ];
 
 export function getImportPaths() {
