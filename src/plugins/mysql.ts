@@ -134,9 +134,11 @@ function bootstrap<T>(
         // we only care about this query if there's a change associated with it
         const ast = getAst(sqlStr) || {};
 
+        agent?.logger?.debug(`mysql.wrapQuery got AST: ${JSON.stringify(ast)}`);
+
         const result = original.apply(this, arguments);
 
-        if (!sqlStr || !ast?.operation) {
+        if (!sqlStr || !ast) {
           return result;
         }
 
