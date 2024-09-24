@@ -146,7 +146,7 @@ function bootstrap<T>(
 
           // wrap emit instead of adding a listener so we don't overwrite any existing listeners
           wrap<typeof result>(result, "emit", (original: Function) => {
-            return function emit(event) {
+            return function emit(event: any) {
               // note that "end" is emitted after "error" if there's an error
               switch (event) {
                 case "error":
