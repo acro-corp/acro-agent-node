@@ -136,7 +136,7 @@ function bootstrap<T>(
 
         const result = original.apply(this, arguments);
 
-        if (!sqlStr || !ast) {
+        if (!sqlStr || !ast?.operation) {
           return result;
         }
 
@@ -144,15 +144,25 @@ function bootstrap<T>(
           // if EventEmitter, handle both success and error cases
           let error = false;
 
-          return result
-            .on("error", () => {
-              error = true;
-            })
-            .on("end", () => {
-              if (!error) {
-                trackChange();
+          // wrap emit instead of adding a listener so we don't overwrite any existing listeners
+          wrap<typeof result>(result, "emit", (original: Function) => {
+            return function emit(event) {
+              // note that "end" is emitted after "error" if there's an error
+              switch (event) {
+                case "error":
+                  error = true;
+                  break;
+                case "end":
+                  if (!error) {
+                    trackChange();
+                  }
+                  break;
               }
-            });
+              return original.apply(this, arguments);
+            };
+          });
+
+          return result;
         }
 
         function wrapCallback(cb: Function) {
@@ -203,6 +213,11 @@ function bootstrap<T>(
         }
 
         function trackChange() {
+          if (!ast?.operation) {
+            // don't track if noop
+            return;
+          }
+
           agent?.logger?.debug(`mysql.trackChange: ${JSON.stringify(ast)}`);
 
           const after: any = {};
