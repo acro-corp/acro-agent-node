@@ -136,7 +136,7 @@ function bootstrap<T>(
 
         const result = original.apply(this, arguments);
 
-        if (!sqlStr || !ast) {
+        if (!sqlStr || !ast?.operation) {
           return result;
         }
 
@@ -203,6 +203,11 @@ function bootstrap<T>(
         }
 
         function trackChange() {
+          if (!ast?.operation) {
+            // don't track if noop
+            return;
+          }
+
           agent?.logger?.debug(`mysql.trackChange: ${JSON.stringify(ast)}`);
 
           const after: any = {};
