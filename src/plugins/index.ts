@@ -18,6 +18,7 @@
 import ExpressPlugin from "./express";
 import ClerkPlugin from "./clerk";
 import MysqlPlugin from "./mysql";
+import Mysql2Plugin from "./mysql2";
 
 export const PLUGINS = [
   {
@@ -36,6 +37,10 @@ export const PLUGINS = [
   {
     plugin: MysqlPlugin,
     importPaths: ["mysql"],
+  },
+  {
+    plugin: Mysql2Plugin,
+    importPaths: ["mysql2"],
   },
 ];
 
