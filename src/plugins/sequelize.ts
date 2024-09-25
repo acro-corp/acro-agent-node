@@ -18,6 +18,7 @@
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
 import { Span } from "../span";
+import { getAst } from "../helpers/mysql";
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -33,41 +34,48 @@ function bootstrap<T>(
   return sequelize;
 
   function wrapQuery(original: Function) {
-    return function query() {
+    return function query(sql: any, options: any) {
       // sequelize handles raw SQL and model-based create queries differently.
-      // for raw SQL & updates/deletes we rely on the underlying adapter (mysql or mysql2).
-      // for model-based creates only we will track in this plugin
+      // for raw SQL & updates/deletes we usually can rely on the underlying
+      // adapter (mysql or mysql2). we track in this plugin as backup, however
 
-      const span = agent?.context?.getData();
+      let replacementIndex = 0;
+      const sqlStr = sql?.query || sql;
+      // replace ? in the query with the replacement index so we can
+      // apply the replacement later
+      const escapedSqlStr = sqlStr?.replace(
+        /\?/g,
+        () => `'{{${replacementIndex++}}}'`
+      );
+      const ast = getAst(agent, escapedSqlStr);
 
       // run the query
       const result = original.apply(this, arguments);
 
-      // wrap the result promise if model-based query
-      wrap<typeof result>(result, "then", (original: Function) => {
-        return function then(cb: Function) {
-          // we grab the span here since somehow the wrapped callback
-          // below gets rid of the context in some cases.
-          // TODO: figure out why and how to prevent
-          const span = agent?.context?.getSpan();
+      // we grab the span here since somehow the wrapped callbacks
+      // below get rid of the context in some cases.
+      // TODO: figure out why and how to prevent
+      const span = agent?.context?.getSpan();
 
-          if (typeof cb === "function") {
-            arguments[0] = (result: any, ...args: any) => {
-              trackChange(span, result);
-
-              return cb.apply(this, [result, ...args]);
-            };
-          }
-
-          return original.apply(this, arguments);
-        };
+      return result.then((res: any) => {
+        trackChange(span, res);
+        return res;
       });
 
-      return result;
-
       function trackChange(span: Span | undefined, result: any) {
-        if (!result?.["$modelOptions"]) {
-          // if not model query, just return
+        // first we try to get what operation just occurred
+        // we only want to track creates/updates/deletes
+        let operation: string = ast?.operation;
+
+        if (!operation) {
+          if (result?.isNewRecord === true) {
+            operation = "create";
+          } else if (result?.isNewRecord === false) {
+            operation = "update";
+          }
+        }
+
+        if (!operation) {
           return;
         }
 
@@ -75,26 +83,52 @@ function bootstrap<T>(
           `sequelize.trackChange: ${JSON.stringify(result)}`
         );
 
+        const after: any = {};
+        switch (ast?.type) {
+          case "insert":
+            ast?.columns?.forEach((column: string, i: number) => {
+              after[column] = ast?.values?.[0]?.value?.[i]?.value;
+            });
+            break;
+          case "update":
+            ast?.set?.forEach((set: any) => {
+              after[set?.column] = set?.value?.value;
+            });
+            break;
+        }
+        // use the replacements as the `after` values
+        Object.keys(after).forEach((key) => {
+          const match = after[key]?.match(/^\{\{([0-9]+)\}\}$/)?.[1];
+          const replacement = options?.replacements?.[parseInt(match, 10)];
+          if (typeof replacement !== "undefined") {
+            after[key] = replacement;
+          }
+        });
+
         span?.trackChange({
           id: result?.id?.toString(),
           model:
             result?.["$modelOptions"]?.tableName ||
             result?.["$modelOptions"]?.name?.plural ||
-            result?.["$modelOptions"]?.name?.singular,
-          operation: result?.isNewRecord ? "create" : "update",
+            result?.["$modelOptions"]?.name?.singular ||
+            ast?.table?.[0]?.table ||
+            "",
+          operation,
           before: result?._previousDataValues
             ? JSON.parse(JSON.stringify(result?._previousDataValues))
             : null,
           after: result?.dataValues
             ? JSON.parse(JSON.stringify(result?.dataValues))
-            : null,
-          ...(result?._changed
-            ? {
-                meta: {
+            : after,
+          meta: {
+            sql: sqlStr,
+            replacements: options?.replacements,
+            ...(result?._changed
+              ? {
                   changed: result?._changed,
-                },
-              }
-            : {}),
+                }
+              : {}),
+          },
         });
       }
     };
