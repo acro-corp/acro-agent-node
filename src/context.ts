@@ -69,6 +69,10 @@ export class ContextManager {
     return this.get()?.span?.trackChange(change);
   }
 
+  getSpan() {
+    return this.get()?.span;
+  }
+
   getData() {
     return this.get()?.span?.data();
   }
