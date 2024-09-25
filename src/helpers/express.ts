@@ -15,7 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { Action } from "@acro-sdk/common-store";
 import {
+  ExpressActionSymbol,
   ExpressSensitiveKeysSymbol,
   ExpressTrackSymbol,
 } from "../plugins/express";
@@ -43,4 +45,12 @@ export function acroIgnoreExpress() {
     req[ExpressTrackSymbol] = false;
     next();
   };
+}
+
+/**
+ * Attaches a some action data to the current Express request context.
+ * @returns
+ */
+export function acroActionExpress(req: any, action: Action) {
+  req[ExpressActionSymbol] = action;
 }
