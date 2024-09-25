@@ -96,6 +96,11 @@ function bootstrap<T>(
         let sqlStr: string = "";
         let values: any;
 
+        // we grab the span here since somehow the wrapped callbacks
+        // below get rid of the context in some cases.
+        // TODO: figure out why and how to prevent
+        const span = agent?.context?.getSpan();
+
         switch (typeof sql) {
           case "string":
             sqlStr = sql;
@@ -120,6 +125,8 @@ function bootstrap<T>(
         if (typeof cb === "function") {
           arguments[2] = wrapCallback(cb);
         }
+
+        agent?.logger?.debug(`mysql.wrapQuery with SQL: ${sqlStr}`);
 
         // we only care about this query if there's a change associated with it
         const ast = getAst(agent, sqlStr);
@@ -192,7 +199,7 @@ function bootstrap<T>(
               break;
           }
 
-          agent?.context?.trackChange({
+          (span || agent?.context)?.trackChange({
             model: ast?.table?.[0]?.table || "",
             operation: ast?.operation || "",
             ...(Object.keys(after).length ? { after } : {}),
