@@ -15,11 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { satisfies } from "semver";
-
 import { AcroAgent } from "../agent";
 import { wrap } from "../wrapper";
-import { getAst } from "../helpers/mysql";
+import { Span } from "../span";
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -40,15 +38,22 @@ function bootstrap<T>(
       // for raw SQL & updates/deletes we rely on the underlying adapter (mysql or mysql2).
       // for model-based creates only we will track in this plugin
 
+      const span = agent?.context?.getData();
+
       // run the query
       const result = original.apply(this, arguments);
 
       // wrap the result promise if model-based query
       wrap<typeof result>(result, "then", (original: Function) => {
         return function then(cb: Function) {
+          // we grab the span here since somehow the wrapped callback
+          // below gets rid of the context in some cases.
+          // TODO: figure out why and how to prevent
+          const span = agent?.context?.getSpan();
+
           if (typeof cb === "function") {
             arguments[0] = (result: any, ...args: any) => {
-              trackChange(result);
+              trackChange(span, result);
 
               return cb.apply(this, [result, ...args]);
             };
@@ -60,7 +65,7 @@ function bootstrap<T>(
 
       return result;
 
-      function trackChange(result: any) {
+      function trackChange(span: Span | undefined, result: any) {
         if (!result?.["$modelOptions"]) {
           // if not model query, just return
           return;
@@ -70,9 +75,10 @@ function bootstrap<T>(
           `sequelize.trackChange: ${JSON.stringify(result)}`
         );
 
-        agent?.context?.trackChange({
+        span?.trackChange({
           id: result?.id?.toString(),
           model:
+            result?.["$modelOptions"]?.tableName ||
             result?.["$modelOptions"]?.name?.plural ||
             result?.["$modelOptions"]?.name?.singular,
           operation: result?.isNewRecord ? "create" : "update",
