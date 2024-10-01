@@ -63,8 +63,8 @@ let _acroAgentInstance: AcroAgent;
 
 class AcroAgent {
   // basic agent settings and authentication
-  _applicationId: string = "";
-  _secret: string = "";
+  _applicationId: string | undefined;
+  _secret: string | undefined;
   _url: string | undefined;
   _track: TrackOptions = {};
   _frameworks: Record<string, any> = {};
@@ -95,8 +95,8 @@ class AcroAgent {
   woMask: AcroMask;
 
   constructor(options: {
-    applicationId: string;
-    secret: string;
+    applicationId?: string;
+    secret?: string;
     app?: string;
     environment?: string;
     url?: string;
@@ -136,7 +136,7 @@ class AcroAgent {
 
     if (options?.url) {
       this._url = options.url;
-    } else {
+    } else if (this._applicationId) {
       this._url = getUrl(this._environment, this._applicationId);
     }
 

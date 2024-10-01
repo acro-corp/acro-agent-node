@@ -41,6 +41,7 @@ const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
 const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
 export const ExpressTrackSymbol = Symbol("AcroExpressTrack");
 export const ExpressSensitiveKeysSymbol = Symbol("AcroExpressSensitiveKeys");
+export const ExpressActionSymbol = Symbol("AcroExpressAction");
 
 function bootstrap<T>(
   agent: AcroAgent,
@@ -204,6 +205,7 @@ function bootstrap<T>(
                     type: "HTTP",
                     verb: req.method,
                     object: getFullRoute(req),
+                    ...(req[ExpressActionSymbol]?.action || {}),
                   },
                   agents: [
                     {
@@ -216,6 +218,7 @@ function bootstrap<T>(
                         ...(req[ExpressActionSymbol]?.agents?.[0]?.meta || {}),
                         ...(frameworkData?.agents?.USER?.meta || {}),
                       },
+                      ...(req[ExpressActionSymbol]?.agents?.[0] || {}),
                     },
                     ...(req[ExpressActionSymbol]?.agents?.slice(1) || []),
                     {
@@ -237,12 +240,15 @@ function bootstrap<T>(
                       req?.body,
                       req[ExpressSensitiveKeysSymbol]
                     ),
+                    ...(req[ExpressActionSymbol]?.request || {}),
                   },
                   response: {
                     status: res.statusCode?.toString(),
                     time,
+                    ...(req[ExpressActionSymbol]?.response || {}),
                   },
                   changes: span?.changes,
+                  meta: req[ExpressActionSymbol]?.meta,
                 });
 
                 const shouldTrack =

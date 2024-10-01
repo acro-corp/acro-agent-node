@@ -21,9 +21,9 @@ import { Action, Engine } from "@acro-sdk/common-store";
 import fetch from "node-fetch";
 
 class ActionStream extends Writable {
-  _applicationId: string = "";
+  _applicationId: string | undefined;
   _companyId: string = "";
-  _secret: string = "";
+  _secret: string | undefined;
   _store: Engine<any> | null = null;
   _url: string = "";
   _userAgent: string = "";
@@ -39,9 +39,9 @@ class ActionStream extends Writable {
       logger,
       userAgent,
     }: {
-      applicationId: string;
+      applicationId?: string;
       companyId?: string;
-      secret: string;
+      secret?: string;
       store?: Engine<any> | null;
       url?: string;
       logger: Logger;
