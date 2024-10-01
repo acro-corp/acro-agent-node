@@ -37,11 +37,13 @@ import { Span } from "../span";
 import { wrap } from "../wrapper";
 import { populateFrameworkData } from "../utils";
 
-const ExpressLayerPatchedSymbol = Symbol("AcroExpressLayerPatched");
-const ExpressMountStackSymbol = Symbol("AcroExpressMountStack");
-export const ExpressTrackSymbol = Symbol("AcroExpressTrack");
-export const ExpressSensitiveKeysSymbol = Symbol("AcroExpressSensitiveKeys");
-export const ExpressActionSymbol = Symbol("AcroExpressAction");
+const ExpressLayerPatchedSymbol = Symbol.for("AcroExpressLayerPatched");
+const ExpressMountStackSymbol = Symbol.for("AcroExpressMountStack");
+export const ExpressTrackSymbol = Symbol.for("AcroExpressTrack");
+export const ExpressSensitiveKeysSymbol = Symbol.for(
+  "AcroExpressSensitiveKeys"
+);
+export const ExpressActionSymbol = Symbol.for("AcroExpressAction");
 
 function bootstrap<T>(
   agent: AcroAgent,
