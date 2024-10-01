@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const AcroWrapped = Symbol("AcroWrapped");
-const AcroUnwrap = Symbol("AcroUnwrap");
+const AcroWrapped = Symbol.for("AcroWrapped");
+const AcroUnwrap = Symbol.for("AcroUnwrap");
 
 function wrap<T>(exports: any, name: string, fn: Function) {
   if (!exports?.[name] || !fn) {
