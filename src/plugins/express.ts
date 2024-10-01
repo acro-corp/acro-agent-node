@@ -202,7 +202,9 @@ function bootstrap<T>(
 
                 const action = agent.createAction({
                   timestamp,
-                  traceIds: [span?.traceId || ""].filter((v) => v),
+                  traceIds: [span?.traceId || ""]
+                    .filter((v) => v)
+                    .concat(req[ExpressActionSymbol]?.traceIds || []),
                   action: {
                     type: "HTTP",
                     verb: req.method,
