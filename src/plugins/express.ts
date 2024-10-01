@@ -207,14 +207,17 @@ function bootstrap<T>(
                   },
                   agents: [
                     {
+                      ...(req[ExpressActionSymbol]?.agents?.[0] || {}),
                       type: "USER",
                       id: getUserId(frameworkOptions, req),
                       meta: {
                         ip: getIp(req),
                         userAgent: req.get("User-Agent"),
+                        ...(req[ExpressActionSymbol]?.agents?.[0]?.meta || {}),
                         ...(frameworkData?.agents?.USER?.meta || {}),
                       },
                     },
+                    ...(req[ExpressActionSymbol]?.agents?.slice(1) || []),
                     {
                       type: "SERVICE",
                       id: hostname(),
@@ -242,17 +245,18 @@ function bootstrap<T>(
                   changes: span?.changes,
                 });
 
+                const shouldTrack =
+                  req[ExpressTrackSymbol] !== false &&
+                  (agent.shouldTrackAction(action) ||
+                    req[ExpressTrackSymbol] === true); // force track
+
                 agent.logger?.debug(
                   `express.createAction: ${JSON.stringify(
                     action
-                  )} – shouldTrack=${agent.shouldTrackAction(action)}`
+                  )} – shouldTrack=${shouldTrack}`
                 );
 
-                if (
-                  req[ExpressTrackSymbol] !== false &&
-                  (agent.shouldTrackAction(action) ||
-                    req[ExpressTrackSymbol] === true) // force track
-                ) {
+                if (shouldTrack) {
                   agent.trackAction(action);
                 }
 
